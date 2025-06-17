@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🌿 Plant Disease Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const RECOMMENDATIONS = {
+        'tomato': {
+            "Bacterial Spot": "Apply copper-based bactericide and avoid overhead watering.",
+            "Early Blight": "Use fungicides like Chlorothalonil and remove infected leaves.",
+            "Late Blight": "Destroy affected plants and apply protective fungicide.",
+            "Leaf Mold": "Improve air circulation and apply fungicide like Mancozeb.",
+            "Septoria Leaf Spot": "Prune infected leaves and use fungicides regularly.",
+            "Spider Mites": "Use insecticidal soap or neem oil.",
+            "Target Spot": "Remove affected foliage and apply fungicide.",
+            "Tomato Mosaic Virus": "Remove infected plants and disinfect tools.",
+            "Yellow Curl Virus": "Control whiteflies and remove infected plants immediately.",
+            "Healthy": "No action needed. Plant appears healthy."
+        },
+        'apple': {
+            "Apple Scab": "Use a protective fungicide and ensure proper pruning.",
+            "Black Rot": "Prune infected branches and apply fungicide.",
+            "Rust": "Consider Mancozeb spray and isolate affected plants.",
+            "Healthy": "No action needed. Plant appears healthy."
+        }
+    };
+  </script>
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background-color: #f9f9f9;
+    }
+    .navbar {
+      background-color: #4caf50;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 14px 20px;
+      z-index: 1000;
+    }
+    .navbar a {
+      float: left;
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+      padding: 8px 16px;
+    }
+    .navbar a:hover {
+      background-color: #3e8e41;
+    }
+
+    .container {
+      margin: 100px auto 40px;
+      padding: 0 20px;
+      max-width: 1000px;
+    }
+
+    .form-box {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .form-controls {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    select,
+    input[type="file"],
+    input[type="submit"] {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    .image-preview {
+      flex: 1;
+      min-width: 260px;
+      text-align: center;
+    }
+    .image-preview img {
+      max-width: 100%;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .recommend-box {
+      background: #fff3e0;
+      border-left: 5px solid #ff9800;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 6px;
+    }
+
+    .history-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .history-box li {
+      background: #f0f0f0;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-left: 5px solid #4caf50;
+    }
+
+    .download-btn {
+      margin-top: 10px;
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+    .download-btn:hover {
+      background: #388e3c;
+    }
+  </style>
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const cropSelect = document.getElementById("crop-select");
+    const fileInput = document.getElementById("image-input");
+
+    cropSelect.addEventListener("change", function () {
+      if (cropSelect.value !== "") {
+        fileInput.disabled = false;
+      } else {
+        fileInput.disabled = true;
+        fileInput.value = "";  // Clear selected file
+      }
+    });
+  });
+</script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="/">🌿 Plant Disease Detection</a>
+    <a href="/graphs">📊 Graphs</a>
+    <a href="/history">🧾 History</a>
+  </div>
+
+  <div class="container">
+    <h2>🔍 Upload Leaf Image for Disease Prediction</h2>
+
+    <form method="POST" enctype="multipart/form-data" class="form-box">
+      <div class="form-controls">
+        <select name="crop" id="crop-select" required>
+          <option value="">-- Select Crop --</option>
+          <option value="apple">🍎 Apple</option>
+          <option value="tomato">🍅 Tomato</option>
+        </select>
+        <input type="file" name="image" id="image-input" required disabled>
+        <input type="submit" value="Predict Disease">
+      </div>
+      <div class="image-preview">
+        {% if prediction %}
+          <p><strong>Prediction:</strong> {{ prediction }}</p>
+
+          {% if prediction == "Unknown" %}
+            <p style="color: red;"><strong>⚠️ Sorry, we couldn't confidently identify the disease.</strong><br>
+            Please ensure the leaf is clear and matches the selected crop.</p>
+          {% endif %}
+        {% endif %}
+
+        {% if image_path %}
+          <img src="{{ url_for('static', filename='uploads/' + image_path) }}" alt="Leaf Image">
+        {% endif %}
+      </div>
+    </form>
+
+    {% if prediction and crop and prediction != "Unknown" %}
+      <div class="recommend-box">
+        <h4>🌱 Treatment Recommendation</h4>
+        <p>
+          {{ recommendations[crop][prediction.split(' (')[0]] if prediction.split(' (')[0] in recommendations[crop] else '🛈 No recommendation available for this disease yet.' }}
+        </p>
+      </div>
+    {% endif %}
+
+
+    <div class="history-box">
+      <h3>🧾 Recent Predictions</h3>
+      {% if history %}
+        <ul>
+          {% for item in history %}
+            <li>{{ item.timestamp }} — {{ item.crop }} — {{ item.label }} ({{ item.confidence }}%)</li>
+          {% endfor %}
+        </ul>
+        <a href="/download_log" class="download-btn">⬇️ Download Log</a>
+      {% else %}
+        <p>No predictions yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
