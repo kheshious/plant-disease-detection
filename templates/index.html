@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🌿 Plant Disease Detection</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background-color: #f9f9f9;
+    }
+
+    .navbar {
+      background-color: #4caf50;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 14px 20px;
+      z-index: 1000;
+    }
+
+    .navbar a {
+      float: left;
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+      padding: 8px 16px;
+    }
+
+    .navbar a:hover {
+      background-color: #3e8e41;
+    }
+
+    .container {
+      margin: 100px auto 40px;
+      padding: 0 20px;
+      max-width: 1500px;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .form-box {
+      display: flex;
+      justify-content: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .form-controls {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    select,
+    input[type="file"],
+    input[type="submit"] {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    .image-preview {
+      flex: 1;
+      min-width: 260px;
+      text-align: center;
+    }
+
+    .image-preview img {
+      max-width: 100%;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+    }
+
+    #live-video {
+      width: 100%;
+      max-width: 600px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .video-placeholder {
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 600px;
+      margin-top: 10px;
+    }
+
+    p { margin: -1px }
+
+    .recommend-box {
+      background: #fff3e0;
+      border-left: 5px solid #ff9800;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 6px;
+    }
+
+    .history-box ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .history-box li {
+      background: #f0f0f0;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-left: 5px solid #4caf50;
+    }
+
+    .download-btn {
+      margin-top: 10px;
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+    }
+
+    .download-btn:hover {
+      background: #388e3c;
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const inputMethod = document.getElementById("input-method");
+      const fileInput = document.getElementById("image-input");
+      const videoContainer = document.getElementById("video-container");
+      const predictBtn = document.querySelector("input[type='submit']");
+      const cropSelect = document.getElementById("crop-select");
+
+      function toggleUploadVisibility() {
+        const method = inputMethod.value;
+        if (method === "upload") {
+          fileInput.disabled = false;
+          fileInput.style.display = "block";
+          predictBtn.value = "Predict Disease";
+        } else {
+          fileInput.disabled = true;
+          fileInput.style.display = "none";
+          predictBtn.value = "Start Live Prediction";
+        }
+      }
+
+      inputMethod.addEventListener("change", toggleUploadVisibility);
+      toggleUploadVisibility(); 
+
+      // Handle form submission for webcam mode
+      document.querySelector("form").addEventListener("submit", function(e) {
+        if (inputMethod.value === "webcam" && !cropSelect.value) {
+          e.preventDefault();
+          alert("Please select a crop type first");
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <div class="navbar">
+    <a href="/">🌿 Plant Disease Detection</a>
+    <a href="/graphs">📊 Graphs</a>
+    <a href="/history">🧾 History</a>
+  </div>
+
+  <div class="container">
+    <h2>🔍 Upload Leaf Image for Disease Prediction</h2>
+
+    {% if error %}
+      <p style="color: red;"><strong>{{ error }}</strong></p>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="form-box">
+      <div class="form-controls">
+        <label>Select Input Method:</label>
+        <select name="input_method" id="input-method" required>
+          <option value="upload" selected>📤 Upload Image</option>
+          <option value="webcam">📷 Use Webcam</option>
+        </select>
+
+        <label>Select Crop:</label>
+        <select name="crop" id="crop-select" required>
+          <option value="">-- Select Crop --</option>
+          <option value="apple" {% if crop == "apple" %}selected{% endif %}>🍎Apple</option>
+          <option value="tomato" {% if crop == "tomato" %}selected{% endif %}>🍅Tomato</option>
+        </select>
+
+        <input type="file" name="image" id="image-input">
+        <input type="submit" value="Predict Disease">
+      </div>
+
+      <div class="image-preview">
+        {% if prediction %}
+          <p><strong>Prediction:</strong> {{ prediction }}</p>
+          {% if prediction == "Unknown" %}
+            <p style="color: red;"><strong>⚠️Could not confidently identify the disease.</strong></p>
+          {% endif %}
+        {% endif %}
+
+        {% if image_path %}
+          <img src="{{ url_for('static', filename='uploads/' + image_path) }}" alt="Leaf Image">
+        {% endif %}
+
+        <div id="video-container">
+          {% if live_feed_active %}
+            <img id="live-video" src="{{ url_for('video_feed') }}" alt="Live Detection">
+          {% else %}
+            <div class="video-placeholder">
+              <p>Select "Use Webcam" Or "Upload Image" and click "Predict Disease" to begin</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+
+    {% if prediction and crop and prediction != "Unknown" %}
+      <div class="recommend-box">
+        <h4>🌱 Treatment Recommendation</h4>
+        <p>
+          {{ recommendations[crop][prediction.split(' (')[0]] if prediction.split(' (')[0] in recommendations[crop] else '🛈 No recommendation available for this disease yet.' }}
+        </p>
+      </div>
+    {% endif %}
+
+    <div class="history-box">
+      <h3>🧾 Recent Predictions</h3>
+      {% if history %}
+        <ul>
+          {% for item in history %}
+            <li>{{ item.timestamp }} — {{ item.crop }} — {{ item.label }} ({{ item.confidence }}%)</li>
+          {% endfor %}
+        </ul>
+        <a href="/download_log" class="download-btn">⬇️ Download Log</a>
+      {% else %}
+        <p>No predictions yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

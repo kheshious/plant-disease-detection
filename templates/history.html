@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🧾 Prediction History</title>
+  <style>
+    body { font-family: Arial; text-align: center; margin-top: 30px; }
+    table {
+      width: 90%;
+      margin: 20px auto;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    th {
+      background-color: #4caf50;
+      color: white;
+    }
+    .navbar {
+      background-color: #4caf50;
+      overflow: hidden;
+      padding: 14px 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+
+    }
+    .navbar a {
+      float: left;
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+      padding: 8px 16px;
+    }
+    .navbar a:hover {
+      background-color: #3e8e41;
+    }
+    .container {
+      margin-top: 80px;
+    }
+     .table-container {
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background-color: #4caf50;
+      color: white;
+      z-index: 1;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <a href="/">🌿 Plant Disease Detection</a>
+    <a href="/graphs">📊 Graphs</a>
+    <a href="/history">🧾 History</a>
+  </div>
+
+  <h2>🧾 Full Prediction History</h2>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Crop</th>
+        <th>Disease</th>
+        <th>Confidence</th>
+        <th>Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in history %}
+      <tr>
+        <td>{{ item.timestamp }}</td>
+        <td>{{ item.crop }}</td>
+        <td>{{ item.label }}</td>
+        <td>{{ item.confidence }}%</td>
+        <td>
+          <img src="{{ url_for('static', filename='uploads/' + item.image) }}" alt="Leaf" style="max-width: 80px;">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+</body>
+</html>
